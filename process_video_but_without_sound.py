@@ -17,13 +17,13 @@ from clasify import VGGNet
 model=VGGNet()
 serializers.load_hdf5("./face_recognition/VGG11_0223096959822.model",model)##input model path
 mean=np.load("./face_recognition/mean.npy")##input mean path
-
-input_video = './nigehajikai.mp4'
-testesnum = "00"
-output1 = "./pvbws"+testesnum+".avi"
-output2 = "./pvbws"+testesnum+".mp4"
+nantoka = 'nigehajikai'
+input_video = './'+nantoka+'.mp4'
 skip=10#if you want otoarimovie, fps / skip must be integer
-otoarimovie = True
+testnum = 0
+otoarimovie = False
+output1 = "./pvbws"+str(skip)+nantoka+str(otoarimovie)+str(testnum)+".avi"
+output2 = "./pvbws"+str(skip)+nantoka+str(otoarimovie)+str(testnum)+".mp4"
 
 def detect_face(image):
     # Create the haar cascade
@@ -66,14 +66,14 @@ def export_movie():
         print "{0} / {1}".format(i,frame_number)
         ret1, frame = cap.read()
         if ret1==True and i % skip == 0:
-            #results = detect_face(frame)
+            results = detect_face(frame)
             #results, leftbottoms = getFaces(frame)
-            if False:#len(results) > 0:
+            if len(results) > 0:
                 ret2, strings = test(results, model, mean)
                 for j in range(len(results)):
                     cv2.putText(frame, text=strings[j], org=leftbottoms[j], fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0,0,255), thickness=1) 
-#                    for j in xrange(len(results)):
-#                        cv2.imwrite("./kaokai/frame"+str(i)+"kao"+str(j)+".jpg", results[j])
+                    for j in xrange(len(results)):
+                        cv2.imwrite("./testdayozenninnsyuugou/frame"+str(i)+"kao"+str(j)+".jpg", results[j])
             else:
                 cv2.putText(frame, text="There Are None", org=(size[0]/3,size[1]), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.5, color=(0,0,255), thickness=1) 
             # write the flipped frame
