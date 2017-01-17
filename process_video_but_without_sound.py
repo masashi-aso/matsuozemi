@@ -4,6 +4,7 @@ import subprocess
 import time
 from face_detector2 import getFaces
 from chainer import serializers
+import subprocess
 
 #from clasify2 import test
 #from clasify2 import VGGNet
@@ -18,8 +19,11 @@ serializers.load_hdf5("./face_recognition/VGG11_0223096959822.model",model)##inp
 mean=np.load("./face_recognition/mean.npy")##input mean path
 
 input_video = './nigehajikai.mp4'
-testesnum = "kai"
-output = "./pvbws_"+testesnum+".avi" 
+testesnum = "00"
+output1 = "./pvbws"+testesnum+".avi"
+output2 = "./pvbws"+testesnum+".mp4"
+skip=10#if you want otoarimovie, fps / skip must be integer
+otoarimovie = True
 
 def detect_face(image):
     # Create the haar cascade
@@ -43,51 +47,53 @@ def detect_face(image):
 #        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
     return results
 def export_movie():
+    global skip
     #target movie
     cap = cv2.VideoCapture(input_video)
-    # form of output 
+    frame_number = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
+#	frame_number = 300
     fourcc = cv2.cv.CV_FOURCC(*'XVID')
-    fps = cap.get(cv2.cv.CV_CAP_PROP_FPS)
     size = ((int)(cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)), (int)(cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)))
+    fps = (int)(cap.get(cv2.cv.CV_CAP_PROP_FPS)+0.5)
+    print "fps={0}".format(fps)
+    if fps % skip != 0 and otoarimovie == True:
+        print "fps % skip != 0,error"
+        cap.release()
+        return False
     # open output
-    skip = 10
-    out = cv2.VideoWriter(output, fourcc, fps/skip, size)
-    i=0
-    while(cap.isOpened()):
-        print i
-        i+=1
+    out = cv2.VideoWriter(output1, fourcc, fps/skip, size)
+    for i in xrange(frame_number):
+        print "{0} / {1}".format(i,frame_number)
         ret1, frame = cap.read()
-        if not ret1:
-            print ret1
-        if ret1==True:
-            if i % skip == 0:
-                #results = detect_face(frame)
-                results, leftbottoms = getFaces(frame)
-                if len(results) > 0:
-                    ret2, strings = test(results, model, mean)
-                    if True:#ret2:
-                        for j in range(len(results)):
-                            cv2.putText(frame, text=strings[j], org=leftbottoms[j], fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0,0,255), thickness=1) 
-    #                    for j in xrange(len(results)):
-    #                        cv2.imwrite("./kaokai/frame"+str(i)+"kao"+str(j)+".jpg", results[j])
-                        print "write"
-                else:
-                    cv2.putText(frame, text="There Are None", org=(size[0]/3,size[1]), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.5, color=(0,0,255), thickness=1) 
-                # write the flipped frame
-                out.write(frame)
-                cv2.imshow('frame1',frame)
-                k = cv2.waitKey(1)
-                if k==27:
-                    break
-        else:
-            break
+        if ret1==True and i % skip == 0:
+            #results = detect_face(frame)
+            #results, leftbottoms = getFaces(frame)
+            if False:#len(results) > 0:
+                ret2, strings = test(results, model, mean)
+                for j in range(len(results)):
+                    cv2.putText(frame, text=strings[j], org=leftbottoms[j], fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0,0,255), thickness=1) 
+#                    for j in xrange(len(results)):
+#                        cv2.imwrite("./kaokai/frame"+str(i)+"kao"+str(j)+".jpg", results[j])
+            else:
+                cv2.putText(frame, text="There Are None", org=(size[0]/3,size[1]), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.5, color=(0,0,255), thickness=1) 
+            # write the flipped frame
+            out.write(frame)
+            cv2.imshow('frame1',frame)
+            k = cv2.waitKey(1)
+            if k==27:
+                break
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-
+    return True
+def add_audio():
+    cmd='ffmpeg -i '+output1+' -i '+input_video+' -vcodec copy -acodec copy '+output2
+    subprocess.call(cmd, shell=True)
 if __name__ == '__main__':
     start = time.time()
-    export_movie()
+    ret=export_movie()
+    if otoarimovie==True and ret==True:
+        add_audio()
     print time.time() - start
 
 
