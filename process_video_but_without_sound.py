@@ -18,7 +18,9 @@ serializers.load_hdf5("./face_recognition/VGG11_0223096959822.model",model)##inp
 mean=np.load("./face_recognition/mean.npy")##input mean path
 
 input_video = './nigehajikai.mp4'
-output = "./pvbws_mutoukai.avi" 
+testesnum = "kai"
+output = "./pvbws_"+testesnum+".avi" 
+
 def detect_face(image):
     # Create the haar cascade
     faceCascade = cv2.CascadeClassifier("/usr/share/opencv/haarcascades/haarcascade_frontalface_alt.xml")
@@ -33,11 +35,13 @@ def detect_face(image):
         flags = cv2.cv.CV_HAAR_SCALE_IMAGE
     )
     print "Found {0} faces!".format(len(faces))
-
-    # Draw a rectangle around the faces
+    results=[]
     for (x, y, w, h) in faces:
-        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
-    return len(faces)
+        results.append(cv2.resize(image[y : y+h, x : x+w],(96,96)))
+#    # Draw a rectangle around the faces
+#    for (x, y, w, h) in faces:
+#        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
+    return results
 def export_movie():
     #target movie
     cap = cv2.VideoCapture(input_video)
@@ -46,34 +50,44 @@ def export_movie():
     fps = cap.get(cv2.cv.CV_CAP_PROP_FPS)
     size = ((int)(cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)), (int)(cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)))
     # open output
-    out = cv2.VideoWriter(output, fourcc, fps, size)
+    skip = 10
+    out = cv2.VideoWriter(output, fourcc, fps/skip, size)
     i=0
     while(cap.isOpened()):
+        print i
         i+=1
         ret1, frame = cap.read()
-        if i % 10 == 0 and ret1==True:
-            #len_faces = detect_face(frame)
-            results, leftbottoms = getFaces(frame)
-            if len(results) > 0:
-                ret2, strings = test(results, leftbottoms=leftbottoms, model=model,frame=frame, mean=mean)
-                if ret2:
-                    for i in range(len(results)):
-                        
-#                    for j in xrange(len(results)):
-#                        cv2.imwrite("./kaokai/frame"+str(i)+"kao"+str(j)+".jpg", results[j])
-                    print "write"
-                    # write the flipped frame
-                    out.write(frame)
-                    cv2.imshow('frame',frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+        if not ret1:
+            print ret1
+        if ret1==True:
+            if i % skip == 0:
+                #results = detect_face(frame)
+                results, leftbottoms = getFaces(frame)
+                if len(results) > 0:
+                    ret2, strings = test(results, model, mean)
+                    if True:#ret2:
+                        for j in range(len(results)):
+                            cv2.putText(frame, text=strings[j], org=leftbottoms[j], fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0,0,255), thickness=1) 
+    #                    for j in xrange(len(results)):
+    #                        cv2.imwrite("./kaokai/frame"+str(i)+"kao"+str(j)+".jpg", results[j])
+                        print "write"
+                else:
+                    cv2.putText(frame, text="There Are None", org=(size[0]/3,size[1]), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.5, color=(0,0,255), thickness=1) 
+                # write the flipped frame
+                out.write(frame)
+                cv2.imshow('frame1',frame)
+                k = cv2.waitKey(1)
+                if k==27:
+                    break
         else:
-            continue
+            break
     cap.release()
     out.release()
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
+    start = time.time()
     export_movie()
+    print time.time() - start
 
 
