@@ -39,9 +39,9 @@ class VGGNet(chainer.Chain):
             conv5_2=L.Convolution2D(512, 512, 3, stride=1, pad=1),
             conv5_3=L.Convolution2D(512, 512, 3, stride=1, pad=1),
             
-            fc6=L.Linear(3*3*512, 200),
-            #fc7=L.Linear(512, 200),
-            fc8=L.Linear(200,8)
+            fc6=L.Linear(7*7*512, 4096),
+            fc7=L.Linear(4096, 4096),
+            fc8=L.Linear(4096,9)
         )
         
     def __call__(self, x, t,train):
@@ -69,7 +69,7 @@ class VGGNet(chainer.Chain):
         h = F.max_pooling_2d(h, 2, stride=2)
         
         h = F.dropout(F.relu(self.fc6(h)), train=train, ratio=0.5)
-        #h = F.dropout(F.relu(self.fc7(h)), train=train, ratio=0.5)
+        h = F.dropout(F.relu(self.fc7(h)), train=train, ratio=0.5)
         
         h = self.fc8(h)
         
@@ -82,11 +82,11 @@ class VGGNet(chainer.Chain):
 
 def test(images):
     model=VGGNet()
-    serializers.load_hdf5("./face_recognition/VGG11_0223096959822.model",model)##input model path
-    mean=np.load("./face_recognition/mean.npy")##input mean path
+    serializers.load_hdf5("VGGface_00010659227118.model",model)##input model path
+    mean=np.load("mean_face.npy")##input mean path
     X=[]
     for im in images:
-        X.append(np.transpose(cv2.resize(im,(96,96)),(2,0,1))/255.)
+        X.append(np.transpose(cv2.resize(im,(224,224)),(2,0,1))/255.)
     t=np.zeros(len(X))
 
     X=np.array(X,dtype=np.float32)
@@ -94,16 +94,15 @@ def test(images):
     X-=mean
 
     _,_,pre=model(X,t,train=False)
-    classes=["aragaki_face","hoshino_face","narita_face","other_face","fujii_face","mano_face","ohtani_face","yamaga_face"]
+    classes= ["aragaki_face","hoshino_face","narita_face","other_face","fujii_face","mano_face","ohtani_face","yamaga_face","ishida_face"]
     prediction=np.argmax(pre.data,axis=1)
     probability=np.max(pre.data,axis=1)
     print(probability)
+    strings=[]
     for i,a in enumerate(prediction):
-        print(classes[a]+"   "+str(probability[i]*100)+"%   detected")
+        print(classes[a]+str(probability[i]*100))
+        strings.append(classes[a]+str(probability[i]*100))
     b=np.sum(prediction==0)
-    if b==0:
-        return False
-    else:
-        return True
+    return strings,prediction
 
 test(np.zeros([4,90,90,3]))
