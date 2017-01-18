@@ -5,7 +5,7 @@ import time
 from face_detector2 import getFaces
 from chainer import serializers
 import subprocess
-
+from collections import Counter
 #from clasify2 import test
 #from clasify2 import VGGNet
 #model=VGGNet()
@@ -17,14 +17,15 @@ from clasify import VGGNet
 model=VGGNet()
 serializers.load_hdf5("./face_recognition/VGG11_0223096959822.model",model)##input model path
 mean=np.load("./face_recognition/mean.npy")##input mean path
-nantoka = 'nigehaji04'
+nantoka = 'nigehaji'
 input_video = './'+nantoka+'.mp4'
-skip=40#if you want otoarimovie, fps / skip must be integer
+skip=10#if you want otoarimovie, fps / skip must be integer
 testnum = 0
 otoarimovie = False
+create_video = False
 output1 = "./pvbws"+str(skip)+nantoka+str(otoarimovie)+str(testnum)+".avi"
 output2 = "./pvbws"+str(skip)+nantoka+str(otoarimovie)+str(testnum)+".mp4"
-collect_face=True
+collect_face=False
 
 def detect_face(image):
     # Create the haar cascade
@@ -49,6 +50,8 @@ def detect_face(image):
     return results
 def export_movie():
     global skip
+    maxid=[]
+    max2id=[]
     #target movie
     cap = cv2.VideoCapture(input_video)
     frame_number = int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
@@ -60,9 +63,11 @@ def export_movie():
     if fps % skip != 0 and otoarimovie == True:
         print "fps % skip != 0,error"
         cap.release()
-        return False
+        return
+    print "frame_number={0}".format(frame_number)
     # open output
     out = cv2.VideoWriter(output1, fourcc, fps/skip, size)
+    print frame_number
     for i in xrange(frame_number):
         print "{0} / {1}".format(i,frame_number)
         ret1, frame = cap.read()
@@ -70,17 +75,27 @@ def export_movie():
             #results = detect_face(frame)
             results, leftbottoms = getFaces(frame)
             if len(results) > 0:
-                if collect_face ==False:
-                    ret2, strings = test(results, model, mean)
+                ret2, strings, prediction = test(results, model, mean)
+                for j in range(len(results)):
+                    cv2.putText(frame, text=strings[j], org=leftbottoms[j], fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0,0,255), thickness=3) 
+                    print prediction[j]
+                    maxid.append(prediction[j])
+                def gen(prediction):
+                    predictionsorted = sorted(prediction)
+                    for k in range(0,len(predictionsorted)):
+                        for l in range(k,len(predictionsorted)):
+                            print (predictionsorted[k], predictionsorted[l])
+                            yield (predictionsorted[k], predictionsorted[l])
+                
+                for j in gen(prediction):
+                    max2id.append(j)
+                if collect_face ==True:
                     for j in range(len(results)):
-                        cv2.putText(frame, text=strings[j], org=leftbottoms[j], fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0,0,255), thickness=1) 
-                else:
-                    for j in range(len(results)):
-                        cv2.imwrite("./testdayozenninnsyuugou/frame"+str(i)+"kao"+str(j)+".jpg", results[j])
+                        cv2.imwrite("./testdazo/"+strings[j]+"f"+str(i)+"k"+str(j)+".jpg", results[j])
             else:
                 cv2.putText(frame, text="There Is None", org=(size[0]/3,size[1]), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1.5, color=(0,0,255), thickness=1) 
             # write the flipped frame
-            if collect_face == False:
+            if create_video == True:
                 out.write(frame)
             cv2.imshow('frame1',frame)
             k = cv2.waitKey(1)
@@ -89,15 +104,18 @@ def export_movie():
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-    return True
-def add_audio():
-    cmd='ffmpeg -i '+output1+' -i '+input_video+' -vcodec copy -acodec copy '+output2
-    subprocess.call(cmd, shell=True)
+    
+    if otoarimovie==True:
+        cmd='ffmpeg -i '+output1+' -i '+input_video+' -vcodec copy -acodec copy '+output2
+        subprocess.call(cmd, shell=True)
+    
+    return Counter(maxid), Counter(max2id)
+
 if __name__ == '__main__':
     start = time.time()
-    ret=export_movie()
-    if otoarimovie==True and ret==True:
-        add_audio()
+    dicid1, dicid2 = export_movie()
+    print dicid1
+    print dicid2
     print time.time() - start
 
 
