@@ -4,7 +4,6 @@ import subprocess
 import time
 from face_detector2 import getFaces
 from chainer import serializers
-import subprocess
 from collections import Counter
 #from clasify2 import test
 #from clasify2 import VGGNet
@@ -82,8 +81,8 @@ def export_movie():
                     maxid.append(prediction[j])
                 def gen(prediction):
                     predictionsorted = sorted(prediction)
-                    for k in range(0,len(predictionsorted)):
-                        for l in range(k,len(predictionsorted)):
+                    for k in range(0,len(predictionsorted)-1):
+                        for l in range(k+1,len(predictionsorted)):
                             print (predictionsorted[k], predictionsorted[l])
                             yield (predictionsorted[k], predictionsorted[l])
                 
