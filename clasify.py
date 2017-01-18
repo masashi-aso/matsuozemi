@@ -106,9 +106,9 @@ def test(images,model,mean):
         print (strings[i])
     b=np.sum(prediction==0)
     if b==0:
-        return False, strings
+        return False, strings, prediction
     else:
-        return True, strings
+        return True, strings, prediction
 
 if __name__ == '__main__':
     model=VGGNet()
