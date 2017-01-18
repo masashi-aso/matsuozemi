@@ -16,7 +16,7 @@ def getFaces(input_image):
         top, bottom, left, right = rect.top(), rect.bottom(), rect.left(), rect.right()
         if min(top, height - bottom - 1, left, width - right - 1) < 0:
             continue
-        results.append(cv2.resize(input_image[top : bottom, left : right],(112,112)))
+        results.append(input_image[top : bottom, left : right])
         leftbottoms.append((left, bottom))
         cv2.rectangle(input_image, (left, top), (right, bottom), (0, 255, 0), 2)
     return results, leftbottoms
